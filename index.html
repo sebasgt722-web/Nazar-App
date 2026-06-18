@@ -463,9 +463,9 @@ async function saveVentaEdit(id) {
   const btn=document.getElementById("v-save-btn");
   btn.disabled=true;btn.textContent="Guardando...";
   const ok=await updateRow("VENTAS",id,{"ID VENTA":id,"FECHA":toDisplay(date),"CLIENTE":client,"CATEGORIA":cat,"CANT. VENTA":Number(qty),"PRECIO VENTA":Number(price),"FORMA DE PAGO":method});
-  if(ok) await loadAll();
   btn.disabled=false;btn.textContent="Registrar";
   btn.setAttribute("onclick","saveVenta()");
+  if(ok) await loadAll();
 }
 
 // ── COMPRAS ───────────────────────────────────────────────────────────────────
@@ -547,9 +547,9 @@ async function saveCompraEdit(id) {
   const btn=document.getElementById("c-save-btn");
   btn.disabled=true;btn.textContent="Guardando...";
   const ok=await updateRow("COMPRAS",id,{"ID COMPRA":id,"FECHA":toDisplay(date),"PROVEEDOR":prov,"CATEGORIA":cat,"CANT. COMPRA":Number(qty),"IMP TOTAL":Number(total)||0});
-  if(ok) await loadAll();
   btn.disabled=false;btn.textContent="+ Agregar";
   btn.setAttribute("onclick","saveCompra()");
+  if(ok) await loadAll();
 }
 
 // ── GASTOS ────────────────────────────────────────────────────────────────────
@@ -627,9 +627,9 @@ async function saveGastoEdit(id) {
   const btn=document.getElementById("g-save-btn");
   btn.disabled=true;btn.textContent="Guardando...";
   const ok=await updateRow("GASTOS VARIOS",id,{"ID GASTO":id,"FECHA":toDisplay(date),"PROVEEDOR":prov,"DETALLE GASTO":det,"IMPORTE":Number(amount)});
-  if(ok) await loadAll();
   btn.disabled=false;btn.textContent="+ Agregar";
   btn.setAttribute("onclick","saveGasto()");
+  if(ok) await loadAll();
 }
 
 // ── CTA CTE ───────────────────────────────────────────────────────────────────
@@ -720,9 +720,9 @@ async function saveCtaEdit(id) {
   btn.disabled=true;btn.textContent="Guardando...";
   const amt=det==="PAGO"?-Math.abs(Number(amount)):Math.abs(Number(amount));
   const ok=await updateRow("CUENTA CORRIENTE",id,{"ID":id,"FECHA":toDisplay(date),"CLIENTE":client,"DETALLE":det,"IMPORTE":amt,"FORMA DE PAGO":det==="PAGO"?"TRANSFERENCIA":"CTA CTE"});
-  if(ok) await loadAll();
   btn.disabled=false;btn.textContent="Registrar";
   btn.setAttribute("onclick","saveCtaCte()");
+  if(ok) await loadAll();
 }
 
 // ── CAJA ──────────────────────────────────────────────────────────────────────

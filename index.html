@@ -178,19 +178,31 @@ async function fetchSheet(sheet) {
   return r.json();
 }
 async function appendRow(sheet, data) {
+  return await sendAction(sheet, "append", data, null);
+}
+async function deleteRow(sheet, id) {
+  return await sendAction(sheet, "delete", null, id);
+}
+async function updateRow(sheet, id, data) {
+  return await sendAction(sheet, "update", data, id);
+}
+async function sendAction(sheet, action, data, id) {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const body = {sheet, action};
+    if(data) body.data = data;
+    if(id) body.id = id;
     await fetch(SCRIPT_URL, {
       method:"POST",
-      body: JSON.stringify({sheet, data}),
+      body: JSON.stringify(body),
       signal: controller.signal
     });
     clearTimeout(timeoutId);
     return true;
   } catch(err) {
-    console.error("Error guardando:", err);
-    alert("No se pudo guardar el registro. Revisá tu conexión e intentá de nuevo.\n\nDetalle: " + err.message);
+    console.error("Error:", err);
+    alert("No se pudo completar la operación. Revisá tu conexión.\n\nDetalle: " + err.message);
     return false;
   }
 }
@@ -206,8 +218,7 @@ async function loadAll() {
     DB.compras = c.map(r=>({prov:r.PROVEEDOR, fecha:toISO(r.FECHA?.toString()), cat:r.CATEGORIA, qty:Number(r["CANT. COMPRA"]||0), total:parseNum(r["IMP TOTAL"]), id:r["ID COMPRA"]}));
     DB.ventas  = v.map(r=>({client:r.CLIENTE, fecha:toISO(r.FECHA?.toString()), cat:r.CATEGORIA, qty:Number(r["CANT. VENTA"]||0), price:parseNum(r["PRECIO VENTA"]), method:r["FORMA DE PAGO"], id:r["ID VENTA"]}));
     DB.gastos  = g.map(r=>({prov:r.PROVEEDOR, fecha:toISO(r.FECHA?.toString()), det:r["DETALLE GASTO"], amount:parseNum(r.IMPORTE), id:r["ID GASTO"]}));
-    DB.cta     = cta.map(r=>({client:r.CLIENTE, fecha:toISO(r.FECHA?.toString()), det:r.DETALLE, amount:parseNum(r.IMPORTE), id:r.ID}));
-  } catch(e) {
+    DB.cta     = cta.map(r=>({client:r.CLIENTE, fecha:toISO(r.FECHA?.toString()), det:r.DETALLE, amount:parseNum(r.IMPORTE), id:r.ID}));  } catch(e) {
     alert("Error al cargar datos. Verificá la conexión con Google Sheets.");
   }
   document.getElementById("loader").style.display="none";
@@ -459,6 +470,8 @@ function renderVentas(stock) {
           <div style="display:flex;gap:8px;align-items:center">
             <span class="badge" style="background:${v.method==="CTA CTE"?"#FAEEDA":"#EAF3DE"};color:${v.method==="CTA CTE"?"#BA7517":"#3B6D11"}">${v.method}</span>
             <span style="font-weight:500;font-size:13px">${fmt(v.price)}</span>
+            <button class="btn btn-ghost btn-sm" onclick="editVenta('${v.id}')">✎</button>
+            <button class="btn btn-ghost btn-sm" onclick="delVenta('${v.id}','${v.client}')" style="color:#E24B4A">✕</button>
           </div>
         </div>`).join("")}
     </div>`;
@@ -478,6 +491,43 @@ async function saveVenta() {
   if(ok && method==="CTA CTE") await appendRow("CUENTA CORRIENTE",{"ID":uid(),"FECHA":toDisplay(date),"CLIENTE":client,"DETALLE":"COMPRA","IMPORTE":Number(price),"FORMA DE PAGO":"CTA CTE"});
   if(ok) await loadAll();
   btn.disabled=false;btn.textContent="Registrar";
+}
+
+async function delVenta(id, client) {
+  if(!confirm(`¿Eliminar la venta de "${client}"? Esta acción no se puede deshacer.`)) return;
+  const ok = await deleteRow("VENTAS", id);
+  if(ok) await loadAll();
+}
+
+function editVenta(id) {
+  const v = DB.ventas.find(x=>String(x.id)===String(id));
+  if(!v) return;
+  document.getElementById("v-client").value = v.client;
+  document.getElementById("v-date").value = v.fecha;
+  document.getElementById("v-method").value = v.method;
+  document.getElementById("v-cat").value = v.cat;
+  document.getElementById("v-qty").value = v.qty;
+  document.getElementById("v-price").value = v.price;
+  const btn=document.getElementById("v-save-btn");
+  btn.textContent = "Guardar edición";
+  btn.setAttribute("onclick", `saveVentaEdit('${id}')`);
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+async function saveVentaEdit(id) {
+  const client=document.getElementById("v-client").value.trim();
+  const date=document.getElementById("v-date").value;
+  const method=document.getElementById("v-method").value;
+  const cat=document.getElementById("v-cat").value;
+  const qty=document.getElementById("v-qty").value;
+  const price=document.getElementById("v-price").value;
+  if(!client||!cat||!price){alert("Completá todos los campos");return;}
+  const btn=document.getElementById("v-save-btn");
+  btn.disabled=true;btn.textContent="Guardando...";
+  const ok = await updateRow("VENTAS", id, {"FECHA":toDisplay(date),"CLIENTE":client,"CATEGORIA":cat,"CANT. VENTA":Number(qty),"PRECIO VENTA":Number(price),"FORMA DE PAGO":method});
+  if(ok) await loadAll();
+  btn.disabled=false;btn.textContent="Registrar";
+  btn.setAttribute("onclick","saveVenta()");
 }
 
 // ── COMPRAS ───────────────────────────────────────────────────────────────────
@@ -507,7 +557,11 @@ function renderCompras() {
             <div class="list-item-title">${c.prov}</div>
             <div class="list-item-sub">${c.fecha} · ${c.cat} · ${c.qty} uds</div>
           </div>
-          <span style="font-weight:500;color:#E24B4A">${fmt(c.total)}</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-weight:500;color:#E24B4A">${fmt(c.total)}</span>
+            <button class="btn btn-ghost btn-sm" onclick="editCompra('${c.id}')">✎</button>
+            <button class="btn btn-ghost btn-sm" onclick="delCompra('${c.id}','${c.prov}')" style="color:#E24B4A">✕</button>
+          </div>
         </div>`).join("")}
     </div>`;
 }
@@ -610,6 +664,8 @@ function renderCtaCte() {
             <div style="display:flex;gap:8px;align-items:center">
               <span class="badge" style="background:${r.det==="PAGO"?"#EAF3DE":"#FCEBEB"};color:${r.det==="PAGO"?"#3B6D11":"#E24B4A"}">${r.det}</span>
               <span style="font-weight:500;color:${r.amount>0?"#E24B4A":"#3B6D11"}">${r.amount>0?"+":""}${fmt(Math.abs(r.amount))}</span>
+              <button class="btn btn-ghost btn-sm" onclick="editCta('${r.id}')">✎</button>
+              <button class="btn btn-ghost btn-sm" onclick="delCta('${r.id}','${r.client}')" style="color:#E24B4A">✕</button>
             </div>
           </div>`).join("")}
       </div>

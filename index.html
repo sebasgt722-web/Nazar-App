@@ -524,7 +524,7 @@ async function saveVentaEdit(id) {
   if(!client||!cat||!price){alert("Completá todos los campos");return;}
   const btn=document.getElementById("v-save-btn");
   btn.disabled=true;btn.textContent="Guardando...";
-  const ok = await updateRow("VENTAS", id, {"FECHA":toDisplay(date),"CLIENTE":client,"CATEGORIA":cat,"CANT. VENTA":Number(qty),"PRECIO VENTA":Number(price),"FORMA DE PAGO":method});
+  const ok = await updateRow("VENTAS", id, {"ID VENTA":id,"FECHA":toDisplay(date),"CLIENTE":client,"CATEGORIA":cat,"CANT. VENTA":Number(qty),"PRECIO VENTA":Number(price),"FORMA DE PAGO":method});
   if(ok) await loadAll();
   btn.disabled=false;btn.textContent="Registrar";
   btn.setAttribute("onclick","saveVenta()");

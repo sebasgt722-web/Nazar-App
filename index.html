@@ -138,7 +138,17 @@ let selectedClient = "";
 let chartTorta = null, chartBarras = null;
 
 const fmt = n => "$" + Number(n||0).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0});
-const toISO = s => { if(!s||String(s).includes("-"))return String(s||""); const p=String(s).split("/"); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:String(s); };
+const toISO = s => {
+  if(!s) return "";
+  const str = String(s).trim();
+  // Ya está en formato ISO yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0,10);
+  // Formato dd/mm/yyyy
+  if(/^\d{2}\/\d{2}\/\d{4}/.test(str)) { const [d,m,y]=str.split("/"); return `${y}-${m}-${d}`; }
+  // Formato con timestamp: 2026-06-18T03:00:00.000Z
+  if(str.includes("T")) return str.slice(0,10);
+  return str;
+};
 const toDisplay = s => { if(!s||s.includes("/"))return s||""; const p=s.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s; };
 const parseNum = s => parseFloat(String(s||0).replace(/[$ .]/g,"").replace(",","."))||0;
 const uid = () => Math.random().toString(36).slice(2,10);

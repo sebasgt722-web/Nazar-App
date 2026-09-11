@@ -129,7 +129,7 @@ td{padding:7px 6px;border-bottom:0.5px solid #f5f5f5}
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-bZrn8NtYCzEwE6KLC-uFIWprvur3wh-IK2N6pkVjeBQd4vP0Vy74Vqt248mK-C9lBw/exec";
 const SALDO_INICIAL = 4288900;
-const CATS = ["Jeans","Remeras M.Largas","Remeras M.Cortas","Pantalones","Bodys","Cintos","Tops","Camisas","Sweaters","Chalecos","Shorts","Buzos","Camperas","Blazers","Vestidos"];
+const CATS = ["Jeans","Remeras M.Largas","Remeras M.Cortas","Pantalones","Bodys","Cintos","Tops","Camisas","Sweaters","Chalecos","Shorts","Buzos","Camperas","Blazers","Vestidos","Conjuntos"];
 const METODOS = ["EFECTIVO","TRANSFERENCIA","TARJETA","CTA CTE"];
 const DETS = ["Alquiler","Luz","Agua","Internet","Contadora","Monotributo","Envío","Etiquetas","Bolsas","Aire","Electricista","Ganancia","Flete","Varios","Otro"];
 const SECTIONS = ["Inicio","Tablero","Stock","Ventas","Compras","Gastos","Cta. Cte.","Caja"];
@@ -145,11 +145,8 @@ const fmt = n => "$" + Number(n||0).toLocaleString("es-AR",{minimumFractionDigit
 const toISO = s => {
   if(!s) return "";
   const str = String(s).trim();
-  // Ya está en formato ISO yyyy-mm-dd
   if(/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0,10);
-  // Formato dd/mm/yyyy
   if(/^\d{2}\/\d{2}\/\d{4}/.test(str)) { const [d,m,y]=str.split("/"); return `${y}-${m}-${d}`; }
-  // Formato con timestamp: 2026-06-18T03:00:00.000Z
   if(str.includes("T")) return str.slice(0,10);
   return str;
 };
@@ -159,7 +156,6 @@ const uid = () => Math.random().toString(36).slice(2,10);
 const todayISO = () => new Date().toISOString().slice(0,10);
 const thisMonth = () => new Date().toISOString().slice(0,7);
 
-// ── NAV ───────────────────────────────────────────────────────────────────────
 const nav = document.getElementById("nav");
 SECTIONS.forEach((s,i) => {
   const btn = document.createElement("button");
@@ -183,7 +179,6 @@ function goTo(id) {
   switchSec(id, document.querySelectorAll("nav button")[idx]);
 }
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
 function checkLogin() {
   const user = document.getElementById("l-user").value.trim().toLowerCase();
   const pass = document.getElementById("l-pass").value.trim();
@@ -209,7 +204,6 @@ function logout() {
   document.getElementById("l-pass").value="";
 }
 
-// ── API ───────────────────────────────────────────────────────────────────────
 async function fetchSheet(sheet) {
   const r = await fetch(`${SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}`);
   return r.json();
@@ -231,11 +225,10 @@ async function sendAction(sheet, action, data, id) {
   }
 }
 
-const appendRow = (sheet,data)      => sendAction(sheet,"append",data,null);
-const deleteRow = (sheet,id)        => sendAction(sheet,"delete",null,id);
-const updateRow = (sheet,id,data)   => sendAction(sheet,"update",data,id);
+const appendRow = (sheet,data)    => sendAction(sheet,"append",data,null);
+const deleteRow = (sheet,id)      => sendAction(sheet,"delete",null,id);
+const updateRow = (sheet,id,data) => sendAction(sheet,"update",data,id);
 
-// ── LOAD ──────────────────────────────────────────────────────────────────────
 async function loadAll() {
   document.getElementById("loader").style.display="flex";
   document.getElementById("main").style.display="none";
@@ -278,7 +271,6 @@ function metric(label,value,sub,color) {
   return `<div class="metric"><div class="metric-label">${label}</div><div class="metric-value" style="color:${color}">${value}</div>${sub?`<div class="metric-sub">${sub}</div>`:""}</div>`;
 }
 
-// ── INICIO ────────────────────────────────────────────────────────────────────
 function renderInicio() {
   const cards = [
     {sec:"Compras", label:"COMPRAS", icon:`<g fill="none" stroke="#1a1a1a" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9.8 9.5 L9.3 19.5 L5.2 18.9 L5.7 10 Z"/><path d="M6.3 9.7 C6.3 8.2 6.9 7 7.6 7 C8.3 7 8.9 8.2 8.9 9.7"/><path d="M10 10.8 L14.8 10.4 L15.4 18.3 L10.1 18.8"/><path d="M11.3 10.5 C11.3 9.1 11.9 8 12.6 8 C13.3 8 13.9 9.1 13.9 10.5"/><path d="M16 6.7 L17.2 5.8 M17.2 7.1 L18.5 6.7 M16.9 8.6 L18 9.3" stroke-width="1"/></g>`},
@@ -300,7 +292,6 @@ function renderInicio() {
     </div>`;
 }
 
-// ── TABLERO ───────────────────────────────────────────────────────────────────
 function renderTablero(stock) {
   const mes = document.getElementById("mes-filter")?.value || thisMonth();
   const vMes = DB.ventas.filter(v=>v.fecha?.startsWith(mes)&&v.cat!=="Caja");
@@ -329,7 +320,7 @@ function renderTablero(stock) {
       ${metric("Compras del mes",fmt(totC),`${cMes.length} compras`,"#E24B4A")}
       ${metric("Gastos del mes",fmt(totG),`${gMes.length} gastos`,"#BA7517")}
       ${metric("Resultado mes",fmt(res),"Ventas−Compras−Gastos",res>=0?"#3B6D11":"#E24B4A")}
-      ${metric("Resultado acumulado",fmt(todasV-todasS),"Desde el inicio",( todasV-todasS)>=0?"#3B6D11":"#E24B4A")}
+      ${metric("Resultado acumulado",fmt(todasV-todasS),"Desde el inicio",(todasV-todasS)>=0?"#3B6D11":"#E24B4A")}
     </div>
     <div class="grid-2" style="margin-bottom:1rem">
       <div class="card">
@@ -338,32 +329,12 @@ function renderTablero(stock) {
       </div>
       <div class="card">
         <div style="font-weight:500;margin-bottom:10px;font-size:14px">Ventas por categoría — ${mes}</div>
-        ${Object.keys(ventCat).length?Object.entries(ventCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{
-          const uds = vMes.filter(v=>v.cat===cat).reduce((a,v)=>a+v.qty,0);
-          return `<div class="row"><span style="color:#888">${cat}</span><span style="font-weight:500">${fmt(val)} <span style="font-weight:400;color:#aaa;font-size:11px">(${uds} uds)</span></span></div>`;
-        }).join(""):'<div style="font-size:13px;color:#aaa">Sin ventas</div>'}
+        ${Object.keys(ventCat).length?Object.entries(ventCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{const uds=vMes.filter(v=>v.cat===cat).reduce((a,v)=>a+v.qty,0);return `<div class="row"><span style="color:#888">${cat}</span><span style="font-weight:500">${fmt(val)} <span style="font-weight:400;color:#aaa;font-size:11px">(${uds} uds)</span></span></div>`;}).join(""):'<div style="font-size:13px;color:#aaa">Sin ventas</div>'}
         ${Object.keys(ventCat).length?'<canvas id="chart-torta" style="max-height:220px;margin-top:12px"></canvas>':''}
       </div>
     </div>
-      <div class="card" style="margin-bottom:1rem">
-        <div style="font-weight:500;margin-bottom:10px;font-size:14px">Valorización del stock disponible</div>
-        ${(()=>{
-          // Costo promedio por categoría basado en compras reales
-          const costoMap={}, cantMap={};
-          DB.compras.filter(c=>c.prov!=="Stock Inicial"&&c.total>0&&c.qty>0).forEach(c=>{
-            costoMap[c.cat]=(costoMap[c.cat]||0)+c.total;
-            cantMap[c.cat]=(cantMap[c.cat]||0)+c.qty;
-          });
-          let totalValor=0;
-          const rows=CATS.filter(cat=>stock[cat]>0).map(cat=>{
-            const costoUnit=cantMap[cat]>0?Math.round(costoMap[cat]/cantMap[cat]):0;
-            const valor=stock[cat]*costoUnit;
-            totalValor+=valor;
-            return `<div class="row"><span style="color:#888">${cat} (${stock[cat]} uds × ${fmt(costoUnit)})</span><span style="font-weight:500">${fmt(valor)}</span></div>`;
-          }).join("");
-          return rows+`<div class="row" style="border-top:1px solid #ddd;margin-top:6px;padding-top:6px"><span style="font-weight:600">Total stock valorizado</span><span style="font-weight:700;color:#D4537E">${fmt(totalValor)}</span></div>`;
-        })()}
-      </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div style="font-weight:500;margin-bottom:10px;font-size:14px">Ventas, Compras y Gastos por mes</div>
       <canvas id="chart-barras" style="max-height:280px"></canvas>
     </div>
     <div class="grid-2">
@@ -400,7 +371,6 @@ function drawBarras() {
   chartBarras=new Chart(ctx,{type:"bar",data:{labels:months.map(m=>{const[y,mo]=m.split("-");return`${names[Number(mo)-1]} ${y}`;}),datasets:[{label:"Ventas",data:months.map(m=>DB.ventas.filter(v=>v.cat!=="Caja"&&v.fecha?.startsWith(m)).reduce((a,v)=>a+v.price,0)),backgroundColor:"#3B6D11"},{label:"Compras",data:months.map(m=>DB.compras.filter(c=>c.prov!=="Stock Inicial"&&c.fecha?.startsWith(m)).reduce((a,c)=>a+c.total,0)),backgroundColor:"#E24B4A"},{label:"Gastos",data:months.map(m=>DB.gastos.filter(g=>g.fecha?.startsWith(m)).reduce((a,g)=>a+g.amount,0)),backgroundColor:"#BA7517"}]},options:{responsive:true,plugins:{legend:{position:"top"},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}},scales:{y:{ticks:{callback:v=>fmt(v)}}}}});
 }
 
-// ── STOCK ─────────────────────────────────────────────────────────────────────
 function renderStock(stock) {
   document.getElementById("sec-Stock").innerHTML = `
     <div class="card">
@@ -411,7 +381,6 @@ function renderStock(stock) {
     </div>`;
 }
 
-// ── VENTAS ────────────────────────────────────────────────────────────────────
 function renderVentas(stock) {
   const filter=document.getElementById("v-filter")?.value||thisMonth();
   const shown=DB.ventas.filter(v=>v.cat!=="Caja"&&(!filter||v.fecha?.startsWith(filter))).reverse();
@@ -503,7 +472,6 @@ async function saveVentaEdit(id) {
   if(ok) await loadAll();
 }
 
-// ── COMPRAS ───────────────────────────────────────────────────────────────────
 function renderCompras() {
   const filter=document.getElementById("c-filter")?.value||thisMonth();
   const shown=DB.compras.filter(c=>c.prov!=="Stock Inicial"&&(!filter||c.fecha?.startsWith(filter))).reverse();
@@ -587,7 +555,6 @@ async function saveCompraEdit(id) {
   if(ok) await loadAll();
 }
 
-// ── GASTOS ────────────────────────────────────────────────────────────────────
 function renderGastos() {
   const filter=document.getElementById("g-filter")?.value||thisMonth();
   const shown=DB.gastos.filter(g=>!filter||g.fecha?.startsWith(filter)).reverse();
@@ -667,7 +634,6 @@ async function saveGastoEdit(id) {
   if(ok) await loadAll();
 }
 
-// ── CTA CTE ───────────────────────────────────────────────────────────────────
 function renderCtaCte() {
   const saldos={};
   DB.cta.forEach(r=>{saldos[r.client]=(saldos[r.client]||0)+r.amount;});
@@ -760,7 +726,6 @@ async function saveCtaEdit(id) {
   if(ok) await loadAll();
 }
 
-// ── CAJA ──────────────────────────────────────────────────────────────────────
 function renderCaja() {
   const filter=document.getElementById("k-filter")?.value||thisMonth();
   const todasV=DB.ventas.filter(v=>v.cat!=="Caja").reduce((a,v)=>a+v.price,0);
@@ -793,7 +758,6 @@ function renderCaja() {
     </div>`;
 }
 
-// ── ARRANCAR ──────────────────────────────────────────────────────────────────
 if(sessionStorage.getItem("nazar_user")) {
   document.getElementById("login-screen").style.display="none";
   document.getElementById("app").style.display="block";

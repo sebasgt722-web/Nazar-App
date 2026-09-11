@@ -329,6 +329,7 @@ function renderTablero(stock) {
       ${metric("Compras del mes",fmt(totC),`${cMes.length} compras`,"#E24B4A")}
       ${metric("Gastos del mes",fmt(totG),`${gMes.length} gastos`,"#BA7517")}
       ${metric("Resultado mes",fmt(res),"Ventas−Compras−Gastos",res>=0?"#3B6D11":"#E24B4A")}
+      ${metric("Resultado acumulado",fmt(todasV-todasS),"Desde el inicio",( todasV-todasS)>=0?"#3B6D11":"#E24B4A")}
     </div>
     <div class="grid-2" style="margin-bottom:1rem">
       <div class="card">
@@ -337,7 +338,10 @@ function renderTablero(stock) {
       </div>
       <div class="card">
         <div style="font-weight:500;margin-bottom:10px;font-size:14px">Ventas por categoría — ${mes}</div>
-        ${Object.keys(ventCat).length?Object.entries(ventCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>`<div class="row"><span style="color:#888">${cat}</span><span style="font-weight:500">${fmt(val)}</span></div>`).join(""):'<div style="font-size:13px;color:#aaa">Sin ventas</div>'}
+        ${Object.keys(ventCat).length?Object.entries(ventCat).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{
+          const uds = vMes.filter(v=>v.cat===cat).reduce((a,v)=>a+v.qty,0);
+          return `<div class="row"><span style="color:#888">${cat}</span><span style="font-weight:500">${fmt(val)} <span style="font-weight:400;color:#aaa;font-size:11px">(${uds} uds)</span></span></div>`;
+        }).join(""):'<div style="font-size:13px;color:#aaa">Sin ventas</div>'}
         ${Object.keys(ventCat).length?'<canvas id="chart-torta" style="max-height:220px;margin-top:12px"></canvas>':''}
       </div>
     </div>
